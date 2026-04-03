@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ProspectAI — Sistema de Prospección B2B</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117;
+      --sidebar: #161b27;
+      --card: #1a2035;
+      --card2: #1e2540;
+      --border: #2a3352;
+      --accent: #4f7ef8;
+      --accent2: #6c8fff;
+      --hot: #ef4444;
+      --warm: #f97316;
+      --cold: #3b82f6;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --radius: 12px;
+    }
+    body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; font-size: 14px; overflow-x: hidden; }
+
+    /* ===== SIDEBAR ===== */
+    #sidebar {
+      width: 230px; min-height: 100vh; background: var(--sidebar);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; z-index: 100; transition: transform .3s;
+    }
+    .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 15px; color: #fff; box-shadow: 0 4px 12px rgba(79, 126, 248, 0.3); }
+    .logo-text { font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+    .sidebar-section { padding: 20px 20px 8px; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; color: var(--text3); text-transform: uppercase; }
+    
+    .mode-toggle { display: flex; margin: 0 16px 16px; background: var(--bg); border-radius: 8px; padding: 4px; border: 1px solid var(--border); }
+    .mode-btn { flex: 1; padding: 8px; text-align: center; font-size: 11px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: var(--text2); transition: all .2s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 6px; text-transform: uppercase; }
+    .mode-btn.active { background: var(--card); color: var(--accent2); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    
+    .nav-group { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; border-radius: 8px; margin: 2px 12px; color: var(--text2); font-size: 13px; transition: all .2s; text-decoration: none; border: 1px solid transparent; }
+    .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+    .nav-item.active { background: rgba(79,126,248,0.1); color: var(--accent2); font-weight: 600; border-color: rgba(79,126,248,0.2); }
+    .nav-icon { width: 20px; text-align: center; font-size: 16px; opacity: 0.8; }
+
+    /* ===== MAIN ===== */
+    #main { margin-left: 230px; flex: 1; padding: 40px 48px; max-width: 1100px; transition: all 0.3s; }
+    .page { display: none; animation: fadeIn 0.4s ease-out; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
+    h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+    .subtitle { color: var(--text2); font-size: 15px; margin-bottom: 32px; line-height: 1.6; max-width: 700px; }
+    
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .badge-blue { background: rgba(79,126,248,0.15); color: var(--accent2); }
+    .badge-orange { background: rgba(249,115,22,0.15); color: #fb923c; }
+    .badge-red { background: rgba(239,68,68,0.15); color: #f87171; }
+    .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+
+    /* ===== CARDS & GRIDS ===== */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; transition: border-color 0.3s; }
+    .card:hover { border-color: rgba(79,126,248,0.4); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; transition: all 0.3s; }
+
+    /* ===== STATS ===== */
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; }
+    .stat-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); opacity: 0; transition: opacity 0.3s; }
+    .stat-card:hover::after { opacity: 1; }
+    .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+    .stat-val { font-size: 32px; font-weight: 800; color: var(--text); }
+    .stat-trend { font-size: 11px; margin-top: 6px; font-weight: 600; }
+    .trend-up { color: var(--green); }
+    .trend-down { color: var(--hot); }
+
+    /* ===== FLOW DIAGRAM ===== */
+    .flow-diagram { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; margin-bottom: 32px; }
+    .flow-node { text-align: center; flex: 1; }
+    .flow-num { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+    .flow-node-label { font-size: 12px; color: var(--text3); font-weight: 600; }
+    .flow-arrow { color: var(--border); font-size: 24px; margin: 0 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .flow-pct { font-size: 10px; font-weight: 700; color: var(--accent2); background: rgba(79,126,248,0.1); padding: 2px 6px; border-radius: 4px; }
+
+    /* ===== SCORING PAGE ===== */
+    .scoring-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+    .score-field { margin-bottom: 16px; }
+    .score-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; }
+    .score-field select { width: 100%; background: var(--bg); border: 2px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 14px; outline: none; cursor: pointer; transition: all 0.2s; }
+    .score-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(79,126,248,0.1); }
+    
+    .score-result-card { background: linear-gradient(145deg, var(--card), var(--card2)); border: 1px solid rgba(79,126,248,0.3); border-radius: var(--radius); padding: 32px; text-align: center; position: sticky; top: 40px; }
+    .score-circle { width: 120px; height: 120px; margin: 0 auto 20px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .score-big { font-size: 48px; font-weight: 900; z-index: 2; }
+    .score-svg { position: absolute; top: 0; left: 0; width: 120px; height: 120px; transform: rotate(-90deg); }
+    .score-svg circle { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .score-bg { stroke: var(--bg); }
+    .score-fill { stroke: var(--accent); stroke-dasharray: 351.85; stroke-dashoffset: 351.85; }
+
+    /* ===== MESSAGES ===== */
+    .template-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; transition: transform 0.2s; }
+    .template-header { padding: 14px 20px; background: var(--card2); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+    .template-body { padding: 20px; font-size: 14px; line-height: 1.7; color: var(--text2); white-space: pre-wrap; font-family: 'Inter', sans-serif; }
+    .var { font-weight: 700; color: var(--accent2); background: rgba(79,126,248,0.1); padding: 1px 4px; border-radius: 4px; }
+    .copy-btn { padding: 6px 14px; background: var(--accent); border: none; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .copy-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+    /* ===== TECH STACK ===== */
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .tech-item { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--card2); border-radius: 12px; border: 1px solid var(--border); }
+    .tech-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid var(--border); }
+
+    /* ===== MOBILE ===== */
+    #hamburger { display: none; position: fixed; top: 16px; left: 16px; z-index: 200; background: var(--sidebar); border: 1px solid var(--border); border-radius: 8px; width: 40px; height: 40px; align-items: center; justify-content: center; cursor: pointer; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    
+    @media (max-width: 1024px) {
+      .scoring-layout { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+      #main { padding: 32px; }
+    }
+
+    @media (max-width: 768px) {
+      #hamburger { display: flex; }
+      #sidebar { transform: translateX(-100%); width: 260px; }
+      #sidebar.active { transform: translateX(0); }
+      #main { margin-left: 0; padding: 80px 20px 40px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .flow-diagram { flex-direction: column; gap: 20px; }
+      .flow-arrow { transform: rotate(90deg); }
+    }
+
+    /* TOAST */
+    #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px); background: #fff; color: #000; padding: 12px 24px; border-radius: 50px; font-weight: 700; font-size: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* SECTIONS */
+    .section-title { font-size: 14px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin: 40px 0 20px; display: flex; align-items: center; gap: 10px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  </style>
+</head>
+<body>
+
+<div id="hamburger" onclick="toggleSidebar()">☰</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">P</div>
+    <span class="logo-text">ProspectAI</span>
+  </div>
+  
+  <div class="sidebar-section">Modo de Estrategia</div>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="mode-servicios" onclick="setMode('servicios')">Servicios</button>
+    <button class="mode-btn" id="mode-insumos" onclick="setMode('insumos')">Insumos</button>
+  </div>
+
+  <div class="sidebar-section">Sistema</div>
+  <div class="nav-group">
+    <a class="nav-item active" onclick="showPage('dashboard', this)"><span class="nav-icon">⊞</span>Visión General</a>
+    <a class="nav-item" onclick="showPage('investigacion', this)"><span class="nav-icon">🔍</span>1. Investigación</a>
+    <a class="nav-item" onclick="showPage('scoring', this)"><span class="nav-icon">◎</span>2. Scoring Automático</a>
+    <a class="nav-item" onclick="showPage('automatizacion', this)"><span class="nav-icon">⚙</span>3. Automatización</a>
+    <a class="nav-item" onclick="showPage('mensajes', this)"><span class="nav-icon">✉</span>4. Generador Copy</a>
+    <a class="nav-item" onclick="showPage('multicanal', this)"><span class="nav-icon">⬡</span>5. Secuencia Multicanal</a>
+    <a class="nav-item" onclick="showPage('kpis', this)"><span class="nav-icon">📊</span>6. Métricas y KPIs</a>
+    <a class="nav-item" onclick="showPage('stack', this)"><span class="nav-icon">🛠</span>Tech Stack</a>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main id="main">
+
+  <!-- PAGE: DASHBOARD -->
+  <section id="page-dashboard" class="page active">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <span class="badge badge-blue">Sistema Activo v2.4</span>
+      <span class="badge badge-green">Conexión API OK</span>
+    </div>
+    <h1>Motor de Prospección B2B</h1>
+    <p class="subtitle">Ecosistema automatizado para la identificación de señales de compra, calificación algorítmica y envío de mensajes hiper-personalizados mediante agentes IA.</p>
+
+    <div class="grid-4">
+      <div class="stat-card">
+        <div class="stat-label">Prospectos en Pipeline</div>
+        <div class="stat-val">2.842</div>
+        <div class="stat-trend trend-up">▲ 14% este mes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Score Promedio</div>
+        <div class="stat-val">7.4</div>
+        <div class="stat-trend">Meta: > 8.0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Conversión a Reunión</div>
+        <div class="stat-val">12.8%</div>
+        <div class="stat-trend trend-up">▲ 2.1% v/s ant.</div>
+      </div>
+      <div class="stat-card" style="border-color: var(--hot);">
+        <div class="stat-label" style="color:var(--hot)">Hot Leads Hoy</div>
+        <div class="stat-val" style="color:var(--hot)">18</div>
+        <div class="stat-trend">Requieren Acción</div>
+      </div>
+    </div>
+
+    <div class="section-title">Embudo de Conversión (Live)</div>
+    <div class="flow-diagram">
+      <div class="flow-node">
+        <div class="flow-num">1.200</div>
+        <div class="flow-node-label">Empresas Filtro</div>
+      </div>
+      <div class="flow-arrow">
+        <span class="flow-pct">35%</span>
+        <span>→</span>
+      </div>
+      <div class="flow-node">
+        <div class="flow-num" style="color:var(--accent2)">420</div>
+        <div class="flow-node-label">Contactos Calificados</div>
+      </div>
+      <div class="flow-arrow">
+        <span class="flow-pct">18%</span>
+        <span>→</span>
+      </div>
+      <div class="flow-node">
+        <div class="flow-num" style="color:var(--yellow)">76</div>
+        <div class="flow-node-label">Interacciones Positivas</div>
+      </div>
+      <div class="flow-arrow">
+        <span class="flow-pct">24%</span>
+        <span>→</span>
+      </div>
+      <div class="flow-node">
+        <div class="flow-num" style="color:var(--green)">18</div>
+        <div class="flow-node-label">Reuniones Cerradas</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Últimas Señales Detectadas</h3>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+          <div style="background:var(--card2); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:13px;">TechCorp S.A.</div>
+              <div style="font-size:11px; color:var(--text3);">Levantamiento de Capital Series B</div>
+            </div>
+            <span class="badge badge-red">HOT</span>
+          </div>
+          <div style="background:var(--card2); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:13px;">Retail Global</div>
+              <div style="font-size:11px; color:var(--text3);">Nuevo VP de Logística contratado</div>
+            </div>
+            <span class="badge badge-orange">WARM</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Próximas Automatizaciones</h3>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+          <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text2);">
+            <div style="width:8px; height:8px; border-radius:50%; background:var(--green);"></div>
+            <span>Enriquece datos vía Apollo.io (Running)</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text2);">
+            <div style="width:8px; height:8px; border-radius:50%; background:var(--accent);"></div>
+            <span>Generando Intro personalizada IA (Pending)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: INVESTIGACION -->
+  <section id="page-investigacion" class="page">
+    <h1>1. Investigación y Definición ICP</h1>
+    <p class="subtitle">Utiliza el buscador inteligente para identificar empresas y decisores clave. El sistema enriquecerá los datos automáticamente.</p>
+
+    <!-- BUSCADOR FUNCIONAL -->
+    <div class="card" style="border-color: var(--accent);">
+      <div style="display:flex; gap:12px;">
+        <input type="text" id="search-input" placeholder="Buscar por empresa, industria o ubicación (ej: SaaS, Madrid...)" 
+               style="flex:1; background:var(--bg); border:2px solid var(--border); border-radius:8px; padding:12px 16px; color:var(--text); outline:none; transition:border-color 0.2s;"
+               onkeyup="if(event.key === 'Enter') performSearch()">
+        <button class="copy-btn" style="padding:0 24px;" onclick="performSearch()">🔍 BUSCAR</button>
+      </div>
+      
+      <div id="search-results-container" style="display:none; margin-top:24px;">
+        <div style="font-size:12px; font-weight:700; color:var(--text3); margin-bottom:12px; display:flex; justify-content:space-between;">
+          <span>RESULTADOS ENCONTRADOS</span>
+          <span id="results-count">0 resultados</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;" id="results-table">
+            <thead>
+              <tr style="text-align:left; border-bottom:1px solid var(--border);">
+                <th style="padding:10px;">Empresa</th>
+                <th style="padding:10px;">Decisor</th>
+                <th style="padding:10px;">Industria</th>
+                <th style="padding:10px;">Ubicación</th>
+                <th style="padding:10px; text-align:right;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="results-body">
+              <!-- JS Injects here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="search-empty" style="display:none; text-align:center; padding:40px 0;">
+        <div style="font-size:24px; margin-bottom:8px;">🕵️‍♂️</div>
+        <div style="font-weight:700; color:var(--text2);">No encontramos resultados</div>
+        <div style="font-size:12px; color:var(--text3);">Prueba con términos como "SaaS", "Logística" o "Madrid"</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2><span style="color:var(--accent)">⚓</span> Firmografía (ICP)</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top:20px;">
+          <div class="score-field">
+            <label>Industria Target</label>
+            <div style="font-weight:700; color:var(--accent2)">SaaS, Logística, Fintech</div>
+          </div>
+          <div class="score-field">
+            <label>Tamaño Empresa</label>
+            <div style="font-weight:700; color:var(--accent2)">50 - 500 empleados</div>
+          </div>
+          <div class="score-field">
+            <label>Geografía</label>
+            <div style="font-weight:700; color:var(--accent2)">Latam & España</div>
+          </div>
+          <div class="score-field">
+            <label>Facturación Est.</label>
+            <div style="font-weight:700; color:var(--accent2)">$2M - $20M USD/año</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2><span style="color:var(--accent)">👤</span> Buyer Personas</h2>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+          <li style="display:flex; align-items:center; gap:10px; padding:10px; background:var(--card2); border-radius:8px;">
+            <div style="font-size:20px;">💼</div>
+            <div>
+              <div style="font-weight:700; font-size:14px;">Director de Operaciones / COO</div>
+              <div style="font-size:12px; color:var(--text3);">Dolor: Ineficiencia en procesos y costos altos.</div>
+            </div>
+          </li>
+          <li style="display:flex; align-items:center; gap:10px; padding:10px; background:var(--card2); border-radius:8px;">
+            <div style="font-size:20px;">⚡</div>
+            <div>
+              <div style="font-weight:700; font-size:14px;">Gerente de Transformación Digital</div>
+              <div style="font-size:12px; color:var(--text3);">Dolor: Resistencia al cambio y gap tecnológico.</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Fuentes de Datos y Enriquecimiento</h3>
+      <div class="tech-grid" style="margin-top:20px;">
+        <div class="tech-item">
+          <div class="tech-icon">🏢</div>
+          <div>
+            <div style="font-weight:700;">LinkedIn Sales Nav</div>
+            <div style="font-size:11px; color:var(--text3);">Búsqueda de decisores</div>
+          </div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-icon">🔌</div>
+          <div>
+            <div style="font-weight:700;">Apollo.io</div>
+            <div style="font-size:11px; color:var(--text3);">Extracción de Emails/Tlf</div>
+          </div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-icon">🧠</div>
+          <div>
+            <div style="font-weight:700;">Perplexity API</div>
+            <div style="font-size:11px; color:var(--text3);">Investigación de noticias</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: SCORING -->
+  <section id="page-scoring" class="page">
+    <h1>2. Scoring Automático de Leads</h1>
+    <p class="subtitle">Calculadora algorítmica para determinar la prioridad de contacto. Evita perder tiempo con empresas que no pueden o no quieren comprar hoy.</p>
+
+    <div class="scoring-layout">
+      <div class="card">
+        <h2>Variables de Calificación</h2>
+        
+        <div class="score-field">
+          <label>Nivel del Decisor (Cargo)</label>
+          <select id="sc-cargo" onchange="calculateScore()">
+            <option value="0">Seleccionar...</option>
+            <option value="10">C-Level / Dueño (10 pts)</option>
+            <option value="7">Gerente / Director (7 pts)</option>
+            <option value="3">Coordinador / Analista (3 pts)</option>
+          </select>
+        </div>
+
+        <div class="score-field">
+          <label>Afinidad Tecnológica (Tech-Stack)</label>
+          <select id="sc-tech" onchange="calculateScore()">
+            <option value="0">Seleccionar...</option>
+            <option value="10">Usa CRM y ERP avanzado (10 pts)</option>
+            <option value="6">Usa herramientas básicas (6 pts)</option>
+            <option value="2">Procesos manuales (Excel) (2 pts)</option>
+          </select>
+        </div>
+
+        <div class="score-field">
+          <label>Crecimiento Empresa (Signals)</label>
+          <select id="sc-growth" onchange="calculateScore()">
+            <option value="0">Seleccionar...</option>
+            <option value="10">Contratando masivamente o Ronda Inversión (10 pts)</option>
+            <option value="5">Crecimiento estable (5 pts)</option>
+            <option value="0">Recortes o estancamiento (0 pts)</option>
+          </select>
+        </div>
+
+        <div class="score-field">
+          <label>Fit de Industria</label>
+          <select id="sc-industry" onchange="calculateScore()">
+            <option value="0">Seleccionar...</option>
+            <option value="10">Industria Core (SaaS, Logística) (10 pts)</option>
+            <option value="5">Industria Adyacente (Retail, Manuf) (5 pts)</option>
+            <option value="2">Baja afinidad (Servicios Prof) (2 pts)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="score-result-card">
+        <div class="score-label">PRIORIDAD AGENTE</div>
+        <div class="score-circle">
+          <svg class="score-svg">
+            <circle class="score-bg" cx="60" cy="60" r="56"></circle>
+            <circle id="score-fill" class="score-fill" cx="60" cy="60" r="56"></circle>
+          </svg>
+          <div id="score-val" class="score-big">0.0</div>
+        </div>
+        <div id="score-category" style="font-weight:800; font-size:18px; margin-bottom:12px;">INSUFICIENTE</div>
+        <p id="score-desc" style="font-size:12px; color:var(--text3); line-height:1.5;">Completa los campos para analizar el potencial del prospecto.</p>
+        
+        <button class="copy-btn" style="margin-top:24px; padding:12px 24px; width:100%;" onclick="showToast('Prospecto guardado en CRM')">IMPORTAR A PIPEDRIVE</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: AUTOMATIZACION -->
+  <section id="page-automatizacion" class="page">
+    <h1>3. Automatización (n8n / API)</h1>
+    <p class="subtitle">El "cerebro" detrás del sistema. Conectamos bases de datos con agentes de IA para operar 24/7 sin intervención humana.</p>
+
+    <div class="card">
+      <h2>Pipeline de Datos</h2>
+      <div style="display:flex; flex-direction:column; gap:4px; margin-top:20px;">
+        <div style="display:flex; gap:16px; padding:16px; background:var(--card2); border-radius:12px; align-items:center;">
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">1</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;">Trigger: Nueva Fila en Google Sheets</div>
+            <div style="font-size:12px; color:var(--text3);">Se añade prospecto desde LinkedIn Sales Nav / Apollo.</div>
+          </div>
+          <div style="color:var(--green)">● Active</div>
+        </div>
+        <div style="text-align:center; color:var(--border); font-size:20px; line-height:0.5;">↓</div>
+        <div style="display:flex; gap:16px; padding:16px; background:var(--card2); border-radius:12px; align-items:center;">
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">2</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;">Enriquecimiento: Waterfall API</div>
+            <div style="font-size:12px; color:var(--text3);">Verificación de email corporativo y búsqueda de LinkedIn personal.</div>
+          </div>
+          <div style="color:var(--green)">● Active</div>
+        </div>
+        <div style="text-align:center; color:var(--border); font-size:20px; line-height:0.5;">↓</div>
+        <div style="display:flex; gap:16px; padding:16px; background:var(--card2); border-radius:12px; align-items:center;">
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">3</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;">IA: Agent Scraper & Personalizer</div>
+            <div style="font-size:12px; color:var(--text3);">Claude 3.5 analiza el perfil y genera un rompehielo basado en su última actividad.</div>
+          </div>
+          <div style="color:var(--green)">● Active</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Webhooks Recibidos</h3>
+        <div style="font-family:monospace; background:#000; padding:16px; border-radius:8px; font-size:11px; color:#4ade80; height:120px; overflow-y:auto;">
+          [16:40:22] Webhook received from Apollo.io<br>
+          [16:40:23] Enriched lead: Juan Perez (CEO at TechInc)<br>
+          [16:40:25] AI Persona analysis complete (Score: 8.5)<br>
+          [16:40:26] Sequence "Global Outreach" triggered...<br>
+          > Log check: Success.
+        </div>
+      </div>
+      <div class="card">
+        <h3>Estatus de Conectores</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+          <div style="padding:10px; border:1px solid var(--border); border-radius:8px; font-size:12px;"><strong>n8n:</strong> Online</div>
+          <div style="padding:10px; border:1px solid var(--border); border-radius:8px; font-size:12px;"><strong>OpenAI:</strong> 29ms</div>
+          <div style="padding:10px; border:1px solid var(--border); border-radius:8px; font-size:12px;"><strong>Pipedrive:</strong> Auth OK</div>
+          <div style="padding:10px; border:1px solid var(--border); border-radius:8px; font-size:12px;"><strong>Instantly:</strong> Ready</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: MENSAJES -->
+  <section id="page-mensajes" class="page">
+    <h1>4. Generador de Mensajes IA</h1>
+    <p class="subtitle">Plantillas dinámicas que cambian según el Buyer Persona y los datos recopilados. No más "Hola [Nombre], espero que estés bien".</p>
+
+    <div class="template-card">
+      <div class="template-header">
+        <span class="badge badge-blue">Cold Email - Paso 1</span>
+        <button class="copy-btn" onclick="copyText('email-1')">Copiar Plantilla</button>
+      </div>
+      <div id="email-1" class="template-body">Asunto: <span class="var">{{Nombre_Empresa}}</span> + Gestión de <span class="var">{{Dolor_Principal}}</span>
+
+Hola <span class="var">{{Nombre}}</span>,
+
+Noté que <span class="var">{{Personalización_IA}}</span>, lo cual suele traer desafíos en la visibilidad de costos operativos para empresas del sector <span class="var">{{Industria}}</span>.
+
+Hemos ayudado a equipos como el tuyo a reducir un 20% el desperdicio en <span class="var">{{Servicio/Insumo}}</span> mediante un sistema de monitoreo automatizado.
+
+¿Tendrás 10 min el <span class="var">{{Dia_Siguiente}}</span> para mostrarte cómo funcionaría en <span class="var">{{Nombre_Empresa}}</span>?
+
+Saludos,
+<span class="var">{{Tu_Nombre}}</span></div>
+    </div>
+
+    <div class="template-card">
+      <div class="template-header">
+        <span class="badge badge-orange">LinkedIn - Conexión</span>
+        <button class="copy-btn" onclick="copyText('li-1')">Copiar Plantilla</button>
+      </div>
+      <div id="li-1" class="template-body">Hola <span class="var">{{Nombre}}</span>, sigo de cerca el crecimiento de <span class="var">{{Nombre_Empresa}}</span> y me llamó la atención <span class="var">{{Noticia_Reciente}}</span>. 
+
+He trabajado con otros <span class="var">{{Cargo}}</span> en optimizar <span class="var">{{Proceso}}</span> y me encantaría conectar para intercambiar ideas.
+
+¡Un saludo!</div>
+    </div>
+
+    <div class="card">
+      <h3>Variables Disponibles</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;">
+        <span class="badge" style="background:#2a3352;">{{Nombre}}</span>
+        <span class="badge" style="background:#2a3352;">{{Nombre_Empresa}}</span>
+        <span class="badge" style="background:#2a3352;">{{Industria}}</span>
+        <span class="badge" style="background:#2a3352;">{{CRM_Actual}}</span>
+        <span class="badge" style="background:#2a3352;">{{Ultima_Noticia}}</span>
+        <span class="badge" style="background:#2a3352;">{{Agente_Asignado}}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: MULTICANAL -->
+  <section id="page-multicanal" class="page">
+    <h1>5. Secuencia Multicanal</h1>
+    <p class="subtitle">Atacamos por 3 frentes: LinkedIn, Email y voz. La omnicanalidad aumenta la probabilidad de respuesta en un 310%.</p>
+
+    <div class="card">
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border); text-align:left;">
+            <th style="padding:12px;">Día</th>
+            <th style="padding:12px;">Canal</th>
+            <th style="padding:12px;">Acción</th>
+            <th style="padding:12px;">Objetivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:12px; font-weight:700;">Día 1</td>
+            <td style="padding:12px;"><span class="badge" style="background:rgba(10,102,194,0.2); color:#5fa8d3;">LinkedIn</span></td>
+            <td style="padding:12px;">Visita de Perfil + Solicitud sin nota</td>
+            <td style="padding:12px; color:var(--text3);">Generar recordación</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:12px; font-weight:700;">Día 3</td>
+            <td style="padding:12px;"><span class="badge" style="background:rgba(34,197,94,0.2); color:#4ade80;">Email</span></td>
+            <td style="padding:12px;">Paso 1: Email de Valor + Case Study</td>
+            <td style="padding:12px; color:var(--text3);">Establecer autoridad</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:12px; font-weight:700;">Día 5</td>
+            <td style="padding:12px;"><span class="badge" style="background:rgba(10,102,194,0.2); color:#5fa8d3;">LinkedIn</span></td>
+            <td style="padding:12px;">Mensaje de InMail (si aceptó)</td>
+            <td style="padding:12px; color:var(--text3);">Interacción directa</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:12px; font-weight:700;">Día 8</td>
+            <td style="padding:12px;"><span class="badge" style="background:rgba(249,115,22,0.2); color:#fb923c;">Teléfono</span></td>
+            <td style="padding:12px;">Llamada de 1 min ("Cold Call de 1 min")</td>
+            <td style="padding:12px; color:var(--text3);">Agendar en vivo</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="border-left:4px solid var(--green);">
+        <h3>Principios de Alta Tasa</h3>
+        <ul style="padding-left:18px; margin-top:12px; color:var(--text2); line-height:1.6;">
+          <li><strong>No vendas:</strong> El objetivo es el interés, no el cierre.</li>
+          <li><strong>Menos es más:</strong> Emails de menos de 100 palabras.</li>
+          <li><strong>Frictionless:</strong> Un solo Call to Action (CTA).</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--hot);">
+        <h3>Errores Críticos (Spam)</h3>
+        <ul style="padding-left:18px; margin-top:12px; color:var(--text2); line-height:1.6;">
+          <li>Enviar PDFs pesados en el primer contacto.</li>
+          <li>No automatizar los "unsubscribes".</li>
+          <li>Usar dominios principales (Usa .io o .co).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: KPIs -->
+  <section id="page-kpis" class="page">
+    <h1>6. Métricas y KPIs de Éxito</h1>
+    <p class="subtitle">Lo que no se mide no se optimiza. Aquí rastreamos la salud de nuestro motor de ventas.</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <h3>Abierto (Email)</h3>
+        <div style="font-size:36px; font-weight:800; color:var(--accent2); margin:10px 0;">64%</div>
+        <div class="kpi-bar" style="height:4px; background:var(--border);">
+          <div style="width:64%; height:100%; background:var(--accent);"></div>
+        </div>
+        <div style="font-size:11px; margin-top:8px; color:var(--text3);">Promedio industria: 25-30%</div>
+      </div>
+      <div class="card">
+        <h3>CTR (Enlaces)</h3>
+        <div style="font-size:36px; font-weight:800; color:var(--yellow); margin:10px 0;">18%</div>
+        <div class="kpi-bar" style="height:4px; background:var(--border);">
+          <div style="width:18%; height:100%; background:var(--yellow);"></div>
+        </div>
+        <div style="font-size:11px; margin-top:8px; color:var(--text3);">Clics en Case Studies / Calendly</div>
+      </div>
+      <div class="card">
+        <h3>Positivos</h3>
+        <div style="font-size:36px; font-weight:800; color:var(--green); margin:10px 0;">5.2%</div>
+        <div class="kpi-bar" style="height:4px; background:var(--border);">
+          <div style="width:30%; height:100%; background:var(--green);"></div>
+        </div>
+        <div style="font-size:11px; margin-top:8px; color:var(--text3);">Respuestas con intención de compra</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>A/B Testing de Asuntos</h3>
+      <div style="margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid var(--border);">
+          <span>"Consulta para <span class="var">{{Nombre_Empresa}}</span>"</span>
+          <span style="font-weight:700; color:var(--green)">72% Open Rate</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:12px;">
+          <span>"Ayuda con <span class="var">{{Dolor}}</span>"</span>
+          <span style="font-weight:700; color:var(--text3)">48% Open Rate</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: TECH STACK -->
+  <section id="page-stack" class="page">
+    <h1>Tech Stack del Ecosistema</h1>
+    <p class="subtitle">Las herramientas necesarias para replicar este sistema. Escalable desde $0 hasta nivel Enterprise.</p>
+
+    <div class="tech-grid">
+      <div class="tech-item">
+        <div class="tech-icon">🔍</div>
+        <div>
+          <div style="font-weight:700;">Sales Navigator</div>
+          <div style="font-size:11px; color:var(--text3);">Fuente primaria de datos ($99/mo)</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon">🚀</div>
+        <div>
+          <div style="font-weight:700;">Instantly.ai</div>
+          <div style="font-size:11px; color:var(--text3);">Envío masivo y Warmup ($37/mo)</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon">⚙️</div>
+        <div>
+          <div style="font-weight:700;">n8n.io (Self-hosted)</div>
+          <div style="font-size:11px; color:var(--text3);">Orquestación y Webhooks ($0)</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon">🤖</div>
+        <div>
+          <div style="font-weight:700;">Make.com</div>
+          <div style="font-size:11px; color:var(--text3);">Alternativa a n8n para integraciones rápidas</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon">🗄️</div>
+        <div>
+          <div style="font-weight:700;">Pipedrive / Clay</div>
+          <div style="font-size:11px; color:var(--text3);">CRM y Enriquecimiento de leads</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon">🎤</div>
+        <div>
+          <div style="font-weight:700;">HeyGen API</div>
+          <div style="font-size:11px; color:var(--text3);">Video personalizado (Opcional)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:32px; background:linear-gradient(rgba(79,126,248,0.1), transparent);">
+      <h2>Hoja de Ruta de Implementación</h2>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-top:20px;">
+        <div style="text-align:center;">
+          <div style="font-weight:800; color:var(--accent2); margin-bottom:8px;">Semana 1</div>
+          <div style="font-size:12px; color:var(--text2);">Setup de dominios (.io / .net) e inicio de Warmup técnico.</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-weight:800; color:var(--accent2); margin-bottom:8px;">Semana 2</div>
+          <div style="font-size:12px; color:var(--text2);">Definición de ICP y extracción de los primeros 1.000 leads.</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-weight:800; color:var(--accent2); margin-bottom:8px;">Semana 3</div>
+          <div style="font-size:12px; color:var(--text2);">Creación de flujos n8n y envío de primer lote de contactos.</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-weight:800; color:var(--accent2); margin-bottom:8px;">Semana 4</div>
+          <div style="font-size:12px; color:var(--text2);">Optimización por KPIs y escalado de volumen diario.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast">
+  <span style="font-size:18px;">✨</span>
+  <span id="toast-msg">Texto copiado con éxito</span>
+</div>
+
+<script>
+  // 1. Navegación
+  function showPage(pageId, element) {
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    // Show target page
+    document.getElementById('page-' + pageId).classList.add('active');
+    
+    // Update Nav
+    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+    element.classList.add('active');
+
+    // Close sidebar on mobile
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar').classList.remove('active');
+    }
+
+    // Scroll to top
+    window.scrollTo(0,0);
+  }
+
+  // 2. Toggle Sidebar (Mobile)
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('active');
+  }
+
+  // 3. Mode Toggle (Visual Only)
+  function setMode(mode) {
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('mode-' + mode).classList.add('active');
+    showToast("Estrategia cambiada a " + mode.toUpperCase());
+  }
+
+  // 4. Copiar Texto
+  function copyText(id) {
+    const text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Plantilla copiada al portapapeles");
+    });
+  }
+
+  // 5. Toast System
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').innerText = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3000);
+  }
+
+  // 6. Scoring Logic
+  function calculateScore() {
+    const cargo = parseInt(document.getElementById('sc-cargo').value) || 0;
+    const tech = parseInt(document.getElementById('sc-tech').value) || 0;
+    const growth = parseInt(document.getElementById('sc-growth').value) || 0;
+    const industry = parseInt(document.getElementById('sc-industry').value) || 0;
+
+    const total = cargo + tech + growth + industry;
+    const finalScore = (total / 40) * 10;
+    
+    // Update UI
+    const scoreVal = document.getElementById('score-val');
+    scoreVal.innerText = finalScore.toFixed(1);
+
+    // Update Circle Progress
+    const circle = document.getElementById('score-fill');
+    const perimeter = 351.85; // 2 * PI * 56
+    const offset = perimeter - (finalScore / 10) * perimeter;
+    circle.style.strokeDashoffset = offset;
+
+    // Update Category
+    const cat = document.getElementById('score-category');
+    const desc = document.getElementById('score-desc');
+    
+    if (finalScore >= 8.5) {
+      cat.innerText = "ALTA PRIORIDAD (HOT)";
+      cat.style.color = "var(--hot)";
+      circle.style.stroke = "var(--hot)";
+      desc.innerText = "Prospecto perfecto. Enviar secuencia multicanal personalizada hoy mismo.";
+    } else if (finalScore >= 6.0) {
+      cat.innerText = "POTENCIAL (WARM)";
+      cat.style.color = "var(--warm)";
+      circle.style.stroke = "var(--warm)";
+      desc.innerText = "Buen fit. Iniciar con nurturing de contenido antes de la llamada.";
+    } else if (finalScore > 0) {
+      cat.innerText = "BAJA PRIORIDAD (COLD)";
+      cat.style.color = "var(--cold)";
+      circle.style.stroke = "var(--cold)";
+      desc.innerText = "Enviar a secuencia masiva de baja fricción o descartar.";
+    } else {
+      cat.innerText = "INSUFICIENTE";
+      cat.style.color = "var(--text3)";
+      circle.style.stroke = "var(--accent)";
+      desc.innerText = "Completa los campos para analizar el potencial del prospecto.";
+    }
+  }
+
+  // 7. Buscador Funcional (MOCK DATABASE + SIMULACIÓN IA)
+  const MOCK_DB = [
+    { empresa: "TechCorp S.A.", decisor: "Carlos Ruiz (CEO)", industria: "SaaS", hq: "Madrid, ES", score_data: { cargo: 10, tech: 10, growth: 10, industry: 10 } },
+    { empresa: "LogiGlobal", decisor: "Marta Gomez (COO)", industria: "Logística", hq: "Barcelona, ES", score_data: { cargo: 7, tech: 6, growth: 10, industry: 10 } },
+    { empresa: "Fintex Solutions", decisor: "Jorge Lima (CTO)", industria: "Fintech", hq: "CDMX, MX", score_data: { cargo: 10, tech: 10, growth: 5, industry: 10 } },
+    { empresa: "AgroTech MX", decisor: "Luis Parra (Fundador)", industria: "Agrotech", hq: "Sinaloa, MX", score_data: { cargo: 10, tech: 2, growth: 5, industry: 5 } },
+    { empresa: "Retail Experts", decisor: "Ana Beltrán (VP Sales)", industria: "Retail", hq: "Madrid, ES", score_data: { cargo: 7, tech: 6, growth: 0, industry: 5 } },
+    { empresa: "CloudFlow Systems", decisor: "Sarah Connor (CEO)", industria: "SaaS", hq: "San Francisco, US", score_data: { cargo: 10, tech: 10, growth: 10, industry: 10 } }
+  ];
+
+  function performSearch() {
+    const input = document.getElementById('search-input');
+    const query = input.value.trim();
+    const resultsContainer = document.getElementById('search-results-container');
+    const emptyState = document.getElementById('search-empty');
+    const resultsBody = document.getElementById('results-body');
+    const countLabel = document.getElementById('results-count');
+
+    if (!query) {
+      showToast("Escribe el nombre de una empresa...");
+      return;
+    }
+
+    // Mostrar estado de carga
+    resultsContainer.style.display = 'none';
+    emptyState.style.display = 'block';
+    emptyState.innerHTML = `
+      <div style="padding: 40px 0;">
+        <div class="loader-spin" style="width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite;"></div>
+        <div style="font-weight: 700; color: var(--accent2);">Investigando "${query}"...</div>
+        <div style="font-size: 11px; color: var(--text3); margin-top: 8px;">Buscando decisores en la web técnica</div>
+      </div>
+    `;
+
+    setTimeout(() => {
+      let filtered = MOCK_DB.filter(item => 
+        item.empresa.toLowerCase().includes(query.toLowerCase()) || 
+        item.industria.toLowerCase().includes(query.toLowerCase())
+      );
+
+      if (filtered.length === 0 && query.length > 1) {
+        filtered = [{
+          empresa: query.charAt(0).toUpperCase() + query.slice(1),
+          decisor: "Decisor Identificado (IA)",
+          industria: "Industria Detectada",
+          hq: "Ubicación Global",
+          isAiGenerated: true,
+          score_data: { cargo: 10, tech: 6, growth: 10, industry: 10 }
+        }];
+      }
+
+      resultsBody.innerHTML = '';
+      
+      if (filtered.length > 0) {
+        emptyState.style.display = 'none';
+        resultsContainer.style.display = 'block';
+        countLabel.innerText = filtered.length + " resultados encontrados";
+
+        filtered.forEach((item) => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = "1px solid var(--border)";
+          tr.innerHTML = `
+            <td style="padding:12px; font-weight:700;">
+              ${item.empresa} 
+              ${item.isAiGenerated ? '<span style="font-size:8px; background:var(--accent); color:white; padding:2px 4px; border-radius:4px; margin-left:5px; vertical-align:middle;">AI</span>' : ''}
+            </td>
+            <td style="padding:12px; color:var(--text2);">${item.decisor}</td>
+            <td style="padding:12px;"><span class="badge badge-blue">${item.industria}</span></td>
+            <td style="padding:12px; color:var(--text3);">${item.hq}</td>
+            <td style="padding:12px; text-align:right;">
+              <button class="copy-btn" style="padding:4px 10px; font-size:10px;" onclick="loadToScoring('${item.empresa}')">INVESTIGAR →</button>
+            </td>
+          `;
+          resultsBody.appendChild(tr);
+        });
+        showToast("¡Análisis completado!");
+      } else {
+        resultsContainer.style.display = 'none';
+        emptyState.style.display = 'block';
+        emptyState.innerHTML = `<div>No hay resultados</div>`;
+      }
+    }, 1200);
+  }
+
+  function loadToScoring(name) {
+    let item = MOCK_DB.find(i => i.empresa === name);
+    if (!item) {
+      item = { score_data: { cargo: 10, tech: 6, growth: 10, industry: 10 } };
+    }
+    
+    document.getElementById('sc-cargo').value = item.score_data.cargo;
+    document.getElementById('sc-tech').value = item.score_data.tech;
+    document.getElementById('sc-growth').value = item.score_data.growth;
+    document.getElementById('sc-industry').value = item.score_data.industry;
+
+    calculateScore();
+    showPage('scoring', document.querySelectorAll('.nav-item')[2]);
+    showToast(`Cargando datos de ${name}...`);
+  }
+
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = "@keyframes spin { to { transform: rotate(360deg); } }";
+  document.head.appendChild(styleSheet);
+
+  window.onload = () => {
+    calculateScore();
+  };
+</script>
+
+</body>
+</html>
